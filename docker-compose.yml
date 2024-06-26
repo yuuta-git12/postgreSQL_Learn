@@ -1,0 +1,37 @@
+# docker-composeのバージョンを指定
+version: "3.9"
+
+# db(Postgres),app(Django)のコンテナを作成
+services:
+  db:
+    # コンテナ名をpostgresに設定
+    container_name: postgres
+    # PostgreSQLのDockerfileをビルドする
+    build:
+      # ビルドコンテキストはカレントディレクトリ
+      # postgreSQLのイメージはDockerfileに記載
+      context: .
+      dockerfile: containers/postgres/Dockerfile
+    # M2チップでも動くように
+    # Intel Macの場合あってもなくても動く
+    # 動作の様子を見て削除も検討
+    platform: linux/x86_64
+    # DBのボリュームを指定
+    # ローカルの/data/dbをコンテナの/var/lib/postgresql/dataにマウントする
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # ヘルスチェック
+    healthcheck:
+      test: pg_isready -U "${POSTGRES_USER:-postgres}" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # コンテナ内の環境変数を.envを使って設定
+    env_file:
+      - .env
+volumes:
+  db_data:
+  static:
